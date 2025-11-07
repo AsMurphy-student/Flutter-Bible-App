@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Translationdropdown extends StatefulWidget {
   const Translationdropdown({super.key});
@@ -8,8 +11,41 @@ class Translationdropdown extends StatefulWidget {
 }
 
 class _TranslationdropdownState extends State<Translationdropdown> {
-  String dropdownValue = 'Item 1'; // Initial value
-  final List<String> items = ['Item 1', 'Item 2', 'Item 3', 'Item 4'];
+  String dropdownValue = 'eng_asv';
+  List<String> translationCodes = [];
+
+  Future<void> getTranslations(String fetchURL) async {
+    // Get response and assign variables accordingly
+    var response = await http.get(Uri.parse(fetchURL));
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      List<dynamic> data = jsonResponse['translations'];
+      List<dynamic> filteredData = data
+          .where(
+            (object) =>
+                object['language'] == 'eng' && object['numberOfBooks'] == 66,
+          )
+          .toList();
+
+      setState(() {
+        translationCodes = filteredData
+          .map((translation) => translation['id'].toString())
+          .toList();
+      });
+    } else {
+      print("Theres a problem: ${response.statusCode}");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    getTranslations(
+      'https://bible.helloao.org/api/available_translations.json',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +61,7 @@ class _TranslationdropdownState extends State<Translationdropdown> {
               dropdownValue = newValue!;
             });
           },
-          items: items.map<DropdownMenuItem<String>>((String value) {
+          items: translationCodes.map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(value: value, child: Text(value));
           }).toList(),
         ),

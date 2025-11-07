@@ -1,4 +1,3 @@
-import 'package:biblereader/utils/sharedprefs.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bible.dart';
@@ -33,7 +32,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> initPrefs() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
-      currentBottomTab = prefs.getInt('currentBottomTab')!;
+      if (prefs.getInt('currentBottomTab') != null) {
+        currentBottomTab = prefs.getInt('currentBottomTab')!;
+      }
     });
   }
 
