@@ -1,4 +1,6 @@
+import 'package:biblereader/utils/sharedprefs.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bible.dart';
 import 'settings.dart';
 
@@ -26,6 +28,29 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Prefs
+  late SharedPreferences prefs;
+  Future<void> initPrefs() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currentBottomTab = prefs.getInt('currentBottomTab')!;
+    });
+  }
+
+  Future<void> saveValue(String key, dynamic value) async {
+    if (value is String) {
+      await prefs.setString(key, value);
+    } else if (value is int) {
+      await prefs.setInt(key, value);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPrefs();
+  }
+
   int currentBottomTab = 0;
 
   final List<Widget> bottomNavScreens = [PageHome(), PageSettings()];
@@ -59,7 +84,7 @@ class _HomePageState extends State<HomePage> {
         onTap: (value) {
           setState(() {
             currentBottomTab = value;
-            
+            saveValue('currentBottomTab', value);
           });
         },
       ),
