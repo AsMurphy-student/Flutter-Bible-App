@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Translationdropdown extends StatefulWidget {
   const Translationdropdown({super.key});
@@ -11,8 +12,27 @@ class Translationdropdown extends StatefulWidget {
 }
 
 class _TranslationdropdownState extends State<Translationdropdown> {
-  String dropdownValue = 'eng_asv';
+  String? chosenTranslation;
   List<String> translationCodes = [];
+
+  // Prefs
+  late SharedPreferences prefs;
+  Future<void> initPrefs() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (prefs.getString('chosenTranslation') != null) {
+        chosenTranslation = prefs.getString('chosenTranslation')!;
+      }
+    });
+  }
+
+  Future<void> saveValue(String key, dynamic value) async {
+    if (value is String) {
+      await prefs.setString(key, value);
+    } else if (value is int) {
+      await prefs.setInt(key, value);
+    }
+  }
 
   Future<void> getTranslations(String fetchURL) async {
     // Get response and assign variables accordingly
@@ -30,8 +50,8 @@ class _TranslationdropdownState extends State<Translationdropdown> {
 
       setState(() {
         translationCodes = filteredData
-          .map((translation) => translation['id'].toString())
-          .toList();
+            .map((translation) => translation['id'].toString())
+            .toList();
       });
     } else {
       print("Theres a problem: ${response.statusCode}");
@@ -41,7 +61,7 @@ class _TranslationdropdownState extends State<Translationdropdown> {
   @override
   void initState() {
     super.initState();
-
+    initPrefs();
     getTranslations(
       'https://bible.helloao.org/api/available_translations.json',
     );
@@ -54,11 +74,12 @@ class _TranslationdropdownState extends State<Translationdropdown> {
       children: [
         Text("Translation:"),
         DropdownButton<String>(
-          value: dropdownValue,
+          value: chosenTranslation,
           icon: Icon(Icons.arrow_downward),
           onChanged: (String? newValue) {
             setState(() {
-              dropdownValue = newValue!;
+              chosenTranslation = newValue!;
+              saveValue('chosenTranslation', newValue);
             });
           },
           items: translationCodes.map<DropdownMenuItem<String>>((String value) {
