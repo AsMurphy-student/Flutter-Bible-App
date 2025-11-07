@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bible.dart';
 import 'settings.dart';
@@ -36,6 +39,10 @@ class _HomePageState extends State<HomePage> {
         currentBottomTab = prefs.getInt('currentBottomTab')!;
       }
     });
+
+    getBooks(
+      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation')}/books.json',
+    );
   }
 
   Future<void> saveValue(String key, dynamic value) async {
@@ -46,6 +53,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> getBooks(String fetchURL) async {
+    // Get response and assign variables accordingly
+    var response = await http.get(Uri.parse(fetchURL));
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      List<dynamic> data = jsonResponse['books'];
+
+      setState(() {
+        bookIDs = data.map((element) => element['id'].toString()).toList();
+      });
+    } else {
+      print("Theres a problem: ${response.statusCode}");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,17 +76,40 @@ class _HomePageState extends State<HomePage> {
   }
 
   int currentBottomTab = 0;
+  int currentBook = 0;
+  late List<String> bookIDs;
 
-  final List<Widget> bottomNavScreens = [PageHome(), PageSettings()];
+  List<Widget> get bottomNavScreens => [
+    PageHome(chapterTitle: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN'),
+    PageSettings(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Book chapter (ex. John 5)"),
+        title: Text("${bookIDs[currentBook]} chapter (ex. John 5)"),
         actions: <Widget>[
-          IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
-          IconButton(icon: Icon(Icons.arrow_forward), onPressed: () {}),
+          IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              setState(() {
+                if (currentBook > 0) {
+                  currentBook -= 1;
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_forward),
+            onPressed: () {
+              setState(() {
+                if (currentBook <= 66) {
+                  currentBook += 1;
+                }
+              });
+            },
+          ),
         ],
       ),
       body: IndexedStack(index: currentBottomTab, children: bottomNavScreens),
