@@ -38,10 +38,13 @@ class _HomePageState extends State<HomePage> {
       if (prefs.getInt('currentBottomTab') != null) {
         currentBottomTab = prefs.getInt('currentBottomTab')!;
       }
+      if (prefs.getInt('currentBook') != null) {
+        currentBook = prefs.getInt('currentBook')!;
+      }
     });
 
     getBooks(
-      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation')}/books.json',
+      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "eng_asv"}/books.json',
     );
   }
 
@@ -88,7 +91,22 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${bookIDs[currentBook]} chapter (ex. John 5)"),
+        title: Text(
+          "${bookIDs.isNotEmpty ? bookIDs[currentBook] : 'Fetching IDs'} chapter (ex. John 5)",
+        ),
+        leading: DropdownButton<String>(
+          value: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN',
+          icon: Icon(Icons.arrow_downward),
+          onChanged: (String? newValue) {
+            setState(() {
+              currentBook = bookIDs.indexOf(newValue!);
+              saveValue('currentBook', bookIDs.indexOf(newValue));
+            });
+          },
+          items: bookIDs.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(value: value, child: Text(value));
+          }).toList(),
+        ),
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.arrow_back),
