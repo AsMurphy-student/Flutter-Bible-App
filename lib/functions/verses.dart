@@ -25,6 +25,12 @@ List<Widget> getContentWidgets(List<dynamic> data) {
           } else {
             verse += data[i]['content'][v].toString();
           }
+        } else if (data[i]['content'][v]['text'] is String) {
+          if (v > 0 && data[i]['content'][v - 1]['text'] is String) {
+            verse += " ${data[i]['content'][v]['text'].toString()}";
+          } else {
+            verse += data[i]['content'][v]['text'].toString();
+          }
         } else {
           verse += '\n';
         }
@@ -42,7 +48,7 @@ List<Widget> getContentWidgets(List<dynamic> data) {
                 ),
               ),
               WidgetSpan(child: SizedBox(width: 4)),
-              TextSpan(text: verse, style: TextStyle(fontSize: 18)),
+              TextSpan(text: verse, style: TextStyle(fontSize: 18, height: 1.5)),
             ],
           ),
         ),
