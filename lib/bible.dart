@@ -42,8 +42,11 @@ class _PageHomeState extends State<PageHome> {
       width: double.infinity,
       height: double.infinity,
       color: Colors.red[50],
-      child: ListView(
-        children: widget.chapterWidgets ?? [],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: widget.chapterWidgets ?? [],
+        ),
       )
     );
   }
