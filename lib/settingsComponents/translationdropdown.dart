@@ -12,7 +12,7 @@ class Translationdropdown extends StatefulWidget {
 }
 
 class _TranslationdropdownState extends State<Translationdropdown> {
-  String? chosenTranslation;
+  String chosenTranslation = 'BSB';
   List<String> translationCodes = [];
 
   // Prefs

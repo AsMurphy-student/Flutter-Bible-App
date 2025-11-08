@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     getBooks(
-      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "eng_asv"}/books.json',
+      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/books.json',
     );
   }
 
@@ -72,8 +72,59 @@ class _HomePageState extends State<HomePage> {
         bookChapterCounts = data
             .map((element) => int.parse(element['numberOfChapters'].toString()))
             .toList();
-        print(bookChapterCounts);
       });
+      getChapterData(
+        'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
+      );
+    } else {
+      print("Theres a problem: ${response.statusCode}");
+    }
+  }
+
+  Future<void> getChapterData(String fetchURL) async {
+    // Get response and assign variables accordingly
+    var response = await http.get(Uri.parse(fetchURL));
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(response.body);
+      List<dynamic> data = jsonResponse['chapter']['content'];
+
+      List<Widget> newWidgets = [];
+      setState(() {
+        for (int i = 0; i < data.length; i++) {
+          if (data[i]['type'] == 'heading') {
+            if (i > 0) {
+              newWidgets.add(SizedBox(height: 30));
+            }
+            newWidgets.add(
+              Text(data[i]['content'].whereType<String>().join(' ')),
+            );
+            if (i < data.length - 1) {
+              newWidgets.add(SizedBox(height: 30));
+            }
+          } else if (data[i]['type'] == 'verse') {
+            newWidgets.add(
+              Text(data[i]['content'].whereType<String>().join(' ')),
+            );
+          }
+        }
+        chapterWidgets = newWidgets;
+        print(chapterWidgets);
+      });
+
+      // setState(() {
+      //   chapterWidgets = chapterData
+      //       .map((content) => {Text('hello')})
+      //       .cast<Widget>()
+      //       .toList();
+      //   print(chapterWidgets);
+      // });
+      // setState(() {
+      //   bookIDs = data.map((element) => element['id'].toString()).toList();
+      //   bookChapterCounts = data
+      //       .map((element) => int.parse(element['numberOfChapters'].toString()))
+      //       .toList();
+      // });
     } else {
       print("Theres a problem: ${response.statusCode}");
     }
@@ -90,9 +141,10 @@ class _HomePageState extends State<HomePage> {
   int currentChapter = 0;
   List<String> bookIDs = [];
   List<int> bookChapterCounts = [];
+  List<Widget> chapterWidgets = [];
 
   List<Widget> get bottomNavScreens => [
-    PageHome(chapterTitle: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN'),
+    PageHome(chapterWidgets: chapterWidgets),
     PageSettings(),
   ];
 
@@ -104,12 +156,18 @@ class _HomePageState extends State<HomePage> {
           "${bookIDs.isNotEmpty ? bookIDs[currentBook] : 'Fetching IDs'} ${currentChapter + 1}",
         ),
         leading: DropdownButton<String>(
+          isExpanded: true,
           value: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN',
           icon: Icon(Icons.arrow_downward),
           onChanged: (String? newValue) {
             setState(() {
               currentBook = bookIDs.indexOf(newValue!);
               saveValue('currentBook', bookIDs.indexOf(newValue));
+              currentChapter = 0;
+              saveValue('currentChapter', currentChapter);
+              getChapterData(
+                'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
+              );
             });
           },
           items: bookIDs.map<DropdownMenuItem<String>>((String value) {
@@ -124,6 +182,9 @@ class _HomePageState extends State<HomePage> {
                 if (currentChapter > 0) {
                   currentChapter -= 1;
                   saveValue('currentChapter', currentChapter);
+                  getChapterData(
+                    'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
+                  );
                 }
               });
             },
@@ -138,6 +199,9 @@ class _HomePageState extends State<HomePage> {
                         : 1)) {
                   currentChapter += 1;
                   saveValue('currentChapter', currentChapter);
+                  getChapterData(
+                    'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
+                  );
                 }
               });
             },

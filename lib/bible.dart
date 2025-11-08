@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PageHome extends StatefulWidget {
-  final String? chapterTitle;
+  final List<Widget>? chapterWidgets;
 
-  const PageHome({super.key, required this.chapterTitle});
+  const PageHome({super.key, required this.chapterWidgets});
 
   @override
   State<PageHome> createState() => _PageHomeState();
@@ -42,10 +42,9 @@ class _PageHomeState extends State<PageHome> {
       width: double.infinity,
       height: double.infinity,
       color: Colors.red[50],
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [Text(widget.chapterTitle!), Text('hello')],
-      ),
+      child: ListView(
+        children: widget.chapterWidgets ?? [],
+      )
     );
   }
 }
