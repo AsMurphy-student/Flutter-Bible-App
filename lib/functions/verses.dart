@@ -10,7 +10,7 @@ List<Widget> getContentWidgets(List<dynamic> data) {
       newWidgets.add(
         Text(
           data[i]['content'].whereType<String>().join(' '),
-          style: TextStyle(fontSize: 30),
+          style: TextStyle(fontSize: 30, color: Colors.black),
         ),
       );
       if (i < data.length - 1) {
@@ -45,10 +45,18 @@ List<Widget> getContentWidgets(List<dynamic> data) {
                 style: TextStyle(
                   fontSize: 12,
                   textBaseline: TextBaseline.ideographic,
+                  color: Colors.black,
                 ),
               ),
               WidgetSpan(child: SizedBox(width: 4)),
-              TextSpan(text: verse, style: TextStyle(fontSize: 18, height: 1.5)),
+              TextSpan(
+                text: verse,
+                style: TextStyle(
+                  fontSize: 18,
+                  height: 1.5,
+                  color: Colors.black,
+                ),
+              ),
             ],
           ),
         ),
