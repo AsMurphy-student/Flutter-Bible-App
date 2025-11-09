@@ -47,9 +47,7 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    getBooks(
-      'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/books.json',
-    );
+    getBooks();
   }
 
   Future<void> saveValue(String key, dynamic value) async {
@@ -60,7 +58,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> getBooks(String fetchURL) async {
+  Future<void> getBooks() async {
+    String fetchURL =
+        'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/books.json';
     // Get response and assign variables accordingly
     var response = await http.get(Uri.parse(fetchURL));
 
@@ -74,15 +74,15 @@ class _HomePageState extends State<HomePage> {
             .map((element) => int.parse(element['numberOfChapters'].toString()))
             .toList();
       });
-      getChapterData(
-        'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
-      );
+      getChapterData();
     } else {
       print("Theres a problem: ${response.statusCode}");
     }
   }
 
-  Future<void> getChapterData(String fetchURL) async {
+  Future<void> getChapterData() async {
+    String fetchURL =
+        'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json';
     // Get response and assign variables accordingly
     var response = await http.get(Uri.parse(fetchURL));
 
@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> get bottomNavScreens => [
     PageHome(chapterWidgets: chapterWidgets),
-    PageSettings(),
+    PageSettings(getBooksAndChapters: getBooks,),
   ];
 
   @override
@@ -147,9 +147,7 @@ class _HomePageState extends State<HomePage> {
               saveValue('currentBook', bookIDs.indexOf(newValue));
               currentChapter = 0;
               saveValue('currentChapter', currentChapter);
-              getChapterData(
-                'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
-              );
+              getChapterData();
             });
           },
           items: bookIDs.map<DropdownMenuItem<String>>((String value) {
@@ -164,9 +162,7 @@ class _HomePageState extends State<HomePage> {
                 if (currentChapter > 0) {
                   currentChapter -= 1;
                   saveValue('currentChapter', currentChapter);
-                  getChapterData(
-                    'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
-                  );
+                  getChapterData();
                 }
               });
             },
@@ -181,9 +177,7 @@ class _HomePageState extends State<HomePage> {
                         : 1)) {
                   currentChapter += 1;
                   saveValue('currentChapter', currentChapter);
-                  getChapterData(
-                    'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json',
-                  );
+                  getChapterData();
                 }
               });
             },

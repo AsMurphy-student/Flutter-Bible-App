@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Translationdropdown extends StatefulWidget {
-  const Translationdropdown({super.key});
+  final VoidCallback getBooksAndChapters;
+
+  const Translationdropdown({super.key, required this.getBooksAndChapters});
 
   @override
   State<Translationdropdown> createState() => _TranslationdropdownState();
@@ -80,6 +82,7 @@ class _TranslationdropdownState extends State<Translationdropdown> {
             setState(() {
               chosenTranslation = newValue!;
               saveValue('chosenTranslation', newValue);
+              widget.getBooksAndChapters();
             });
           },
           items: translationCodes.map<DropdownMenuItem<String>>((String value) {
