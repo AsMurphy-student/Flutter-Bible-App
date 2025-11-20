@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    getBooks();
+    // getBooks();
   }
 
   Future<void> saveValue(String key, dynamic value) async {
@@ -88,47 +88,40 @@ class _HomePageState extends State<HomePage> {
       var jsonResponse = jsonDecode(response.body);
       List<dynamic> data = jsonResponse['books'];
 
-      setState(() {
-        bookIDs = data.map((element) => element['id'].toString()).toList();
-        bookChapterCounts = data
-            .map((element) => int.parse(element['numberOfChapters'].toString()))
-            .toList();
-      });
-      getChapterData();
+      List<String> bookIDs = data
+          .map((element) => element['id'].toString())
+          .toList();
+      List<int> bookChapterCounts = data
+          .map((element) => int.parse(element['numberOfChapters'].toString()))
+          .toList();
+
+      for (int b = 0; b < bookIDs.length; b++) {
+        for (int c = 0; c < bookChapterCounts[b]; c++) {
+          print('${bookIDs[b]}: ${c + 1}');
+        }
+      }
     } else {
       print("Theres a problem: ${response.statusCode}");
     }
   }
 
-  Future<void> getChapterData() async {
-    String fetchURL =
-        'https://bible.helloao.org/api/${prefs.getString('chosenTranslation') ?? "BSB"}/${bookIDs[currentBook]}/${currentChapter + 1}.json';
-    // Get response and assign variables accordingly
-    var response = await http.get(Uri.parse(fetchURL));
-
-    if (response.statusCode == 200) {
+  Future<List<dynamic>> getChapterData(
+    String translation,
+    String bookID,
+    int chapter,
+  ) async {
+    try {
+      String fetchURL =
+          'https://bible.helloao.org/api/$translation/$bookID/$chapter.json';
+      // Get response and assign variables accordingly
+      var response = await http.get(Uri.parse(fetchURL));
       var jsonResponse = jsonDecode(response.body);
       List<dynamic> data = jsonResponse['chapter']['content'];
 
-      setState(() {
-        chapterWidgets = getContentWidgets(data, context);
-      });
-
-      // setState(() {
-      //   chapterWidgets = chapterData
-      //       .map((content) => {Text('hello')})
-      //       .cast<Widget>()
-      //       .toList();
-      //   print(chapterWidgets);
-      // });
-      // setState(() {
-      //   bookIDs = data.map((element) => element['id'].toString()).toList();
-      //   bookChapterCounts = data
-      //       .map((element) => int.parse(element['numberOfChapters'].toString()))
-      //       .toList();
-      // });
-    } else {
-      print("Theres a problem: ${response.statusCode}");
+      return data;
+    } catch (e) {
+      print('Error: $e');
+      rethrow;
     }
   }
 
@@ -141,8 +134,9 @@ class _HomePageState extends State<HomePage> {
   int currentBottomTab = 0;
   int currentBook = 0;
   int currentChapter = 0;
-  List<String> bookIDs = [];
-  List<int> bookChapterCounts = [];
+  // List<String> bookIDs = [];
+  // List<int> bookChapterCounts = [];
+  var bibleData = <String, List<dynamic>>{};
   List<Widget> chapterWidgets = [];
 
   List<Widget> get bottomNavScreens => [
@@ -155,51 +149,56 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "${bookIDs.isNotEmpty ? bookIDs[currentBook] : 'Fetching IDs'} ${currentChapter + 1}",
+          // "${bookIDs.isNotEmpty ? bookIDs[currentBook] : 'Fetching IDs'} ${currentChapter + 1}",
+          "Testing",
         ),
-        leading: DropdownButton<String>(
-          isExpanded: true,
-          value: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN',
-          icon: Icon(Icons.arrow_downward),
-          onChanged: (String? newValue) {
-            setState(() {
-              currentBook = bookIDs.indexOf(newValue!);
-              saveValue('currentBook', bookIDs.indexOf(newValue));
-              currentChapter = 0;
-              saveValue('currentChapter', currentChapter);
-              getChapterData();
-            });
-          },
-          items: bookIDs.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(value: value, child: Text(value));
-          }).toList(),
-        ),
+        // leading: DropdownButton<String>(
+        //   isExpanded: true,
+
+        //   // value: bookIDs.isNotEmpty ? bookIDs[currentBook] : 'GEN',
+        //   value: 'GEN',
+
+        //   icon: Icon(Icons.arrow_downward),
+        //   onChanged: (String? newValue) {
+        //     setState(() {
+        //       // currentBook = bookIDs.indexOf(newValue!);
+        //       // saveValue('currentBook', bookIDs.indexOf(newValue));
+        //       currentChapter = 0;
+        //       saveValue('currentChapter', currentChapter);
+        //       getChapterData();
+        //     });
+        //   },
+        //   items: bookIDs.map<DropdownMenuItem<String>>((String value) {
+        //     return DropdownMenuItem<String>(value: value, child: Text(value));
+        //   }).toList(),
+        // ),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              setState(() {
-                if (currentChapter > 0) {
-                  currentChapter -= 1;
-                  saveValue('currentChapter', currentChapter);
-                  getChapterData();
-                }
-              });
-            },
-          ),
+          // IconButton(
+          //   icon: Icon(Icons.arrow_back),
+          //   onPressed: () {
+          //     setState(() {
+          //       if (currentChapter > 0) {
+          //         currentChapter -= 1;
+          //         saveValue('currentChapter', currentChapter);
+          //         getChapterData();
+          //       }
+          //     });
+          //   },
+          // ),
           IconButton(
             icon: Icon(Icons.arrow_forward),
             onPressed: () {
-              setState(() {
-                if (currentChapter <
-                    (bookChapterCounts.isNotEmpty
-                        ? bookChapterCounts[currentBook] - 1
-                        : 1)) {
-                  currentChapter += 1;
-                  saveValue('currentChapter', currentChapter);
-                  getChapterData();
-                }
-              });
+              // setState(() {
+              //   if (currentChapter <
+              //       (bookChapterCounts.isNotEmpty
+              //           ? bookChapterCounts[currentBook] - 1
+              //           : 1)) {
+              //     currentChapter += 1;
+              //     saveValue('currentChapter', currentChapter);
+              //     getChapterData();
+              //   }
+              // });
+              getBooks();
             },
           ),
         ],
