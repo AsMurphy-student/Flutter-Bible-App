@@ -6,8 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bible.dart';
 import 'settings.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:archive/archive.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   runApp(const MainApp());
 }
 
@@ -65,14 +70,42 @@ class _HomePageState extends State<HomePage> {
       if (prefs.getInt('currentChapter') != null) {
         currentChapter = prefs.getInt('currentChapter')!;
       }
-      // if (prefs.getString('bibleData') != null) {
-      //   bibleData = json.decode(prefs.getString('bibleData')!);
-      // } else {
-      //   getBooks();
-      // }
-    });
+      if (prefs.getString('bibleData') != null) {
+        String bibleDataString = prefs.getString('bibleData')!;
+        List<int> compressed = base64.decode(bibleDataString);
+        List<int> bytes = GZipDecoder().decodeBytes(compressed);
 
-    getBooks();
+        dynamic loadedBibleData;
+        try {
+          loadedBibleData = jsonDecode(utf8.decode(bytes));
+          for (int b = 0; b < loadedBibleData.length; b++) {
+            bibleData[loadedBibleData.keys.elementAt(b)] = loadedBibleData
+                .values
+                .elementAt(b);
+          }
+          setState(() {
+            bibleData = bibleData;
+            chapterWidgets = getContentWidgets(bibleData[currentBook]?[currentChapter], context);
+          });
+        } catch (e) {
+          print('Error decoding JSON: $e');
+        }
+
+        FlutterNativeSplash.remove();
+      } else {
+        print('getting books');
+        getBooks();
+      }
+    });
+    // print('getting books');
+    // await getBooks();
+    // print('got books');
+    // chapterWidgets = getContentWidgets(
+    //   bibleData[currentBook]?[currentChapter],
+    //   context.mounted ? context : context,
+    // );
+    // print('set chapter widgets');
+    // FlutterNativeSplash.remove();
   }
 
   Future<void> saveValue(String key, dynamic value) async {
@@ -86,6 +119,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> getBooks() async {
     String translation = prefs.getString('chosenTranslation') ?? "BSB";
     String fetchURL = 'https://bible.helloao.org/api/$translation/books.json';
+    // try {
     // Get response and assign variables accordingly
     var response = await http.get(Uri.parse(fetchURL));
 
@@ -106,14 +140,28 @@ class _HomePageState extends State<HomePage> {
           bookData.add(await getChapterData(translation, bookIDs[b], c + 1));
         }
         bibleData[bookIDs[b]] = bookData;
+        print('Got ${bookIDs[b]}');
       }
       setState(() {
         bibleData = bibleData;
       });
-      // saveValue('bibleData', json.encode(bibleData));
+      print('got books');
+      List<int> bytes = utf8.encode(json.encode(bibleData));
+      List<int> compressed = GZipEncoder().encode(bytes);
+      saveValue('bibleData', base64.encode(compressed));
+      print('saved bible');
+      chapterWidgets = getContentWidgets(
+        bibleData[currentBook]?[currentChapter],
+        context.mounted ? context : context,
+      );
+      print('set chapter widgets');
+      FlutterNativeSplash.remove();
     } else {
       print("Theres a problem: ${response.statusCode}");
     }
+    // } catch (e) {
+    //   print(e);
+    // }
   }
 
   Future<List<dynamic>> getChapterData(
@@ -126,6 +174,9 @@ class _HomePageState extends State<HomePage> {
           'https://bible.helloao.org/api/$translation/$bookID/$chapter.json';
       // Get response and assign variables accordingly
       var response = await http.get(Uri.parse(fetchURL));
+      if (response.statusCode != 200) {
+        print('error');
+      }
       var jsonResponse = jsonDecode(response.body);
       List<dynamic> data = jsonResponse['chapter']['content'];
 
@@ -145,8 +196,6 @@ class _HomePageState extends State<HomePage> {
   int currentBottomTab = 0;
   String currentBook = 'GEN';
   int currentChapter = 0;
-  // List<String> bookIDs = [];
-  // List<int> bookChapterCounts = [];
   var bibleData = <String, List<dynamic>>{};
   List<Widget> chapterWidgets = [];
 
@@ -162,53 +211,58 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           "${bibleData.isNotEmpty ? currentBook : 'Fetching IDs'} ${currentChapter + 1}",
         ),
-        // leading: DropdownButton<String>(
-        //   isExpanded: true,
-        //   value: bibleData.isNotEmpty ? currentBook : 'GEN',
-        //   icon: Icon(Icons.arrow_downward),
-        //   onChanged: (String? newValue) {
-        //     setState(() {
-        //       currentBook = newValue!;
-        //       saveValue('currentBook', newValue);
-        //       currentChapter = 0;
-        //       saveValue('currentChapter', currentChapter);
-        //       chapterWidgets = getContentWidgets(
-        //         bibleData[currentBook]?[currentChapter],
-        //         context,
-        //       );
-        //     });
-        //   },
-        //   items: bibleData.keys.map<DropdownMenuItem<String>>((String value) {
-        //     return DropdownMenuItem<String>(value: value, child: Text(value));
-        //   }).toList(),
-        // ),
+        leading: DropdownButton<String>(
+          isExpanded: true,
+          value: bibleData.isNotEmpty ? currentBook : 'GEN',
+          icon: Icon(Icons.arrow_downward),
+          onChanged: (String? newValue) {
+            setState(() {
+              currentBook = newValue!;
+              saveValue('currentBook', newValue);
+              currentChapter = 0;
+              saveValue('currentChapter', currentChapter);
+              chapterWidgets = getContentWidgets(
+                bibleData[currentBook]?[currentChapter],
+                context,
+              );
+            });
+          },
+          items: bibleData.keys.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(value: value, child: Text(value));
+          }).toList(),
+        ),
         actions: <Widget>[
-          // IconButton(
-          //   icon: Icon(Icons.arrow_back),
-          //   onPressed: () {
-          //     setState(() {
-          //       if (currentChapter > 0) {
-          //         currentChapter -= 1;
-          //         saveValue('currentChapter', currentChapter);
-          //         getChapterData();
-          //       }
-          //     });
-          //   },
-          // ),
+          IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              setState(() {
+                if (currentChapter > 0) {
+                  currentChapter -= 1;
+                  saveValue('currentChapter', currentChapter);
+                  chapterWidgets = getContentWidgets(
+                    bibleData[currentBook]?[currentChapter],
+                    context,
+                  );
+                }
+              });
+            },
+          ),
           IconButton(
             icon: Icon(Icons.arrow_forward),
             onPressed: () {
-              // setState(() {
-              //   if (currentChapter <
-              //       (bookChapterCounts.isNotEmpty
-              //           ? bookChapterCounts[currentBook] - 1
-              //           : 1)) {
-              //     currentChapter += 1;
-              //     saveValue('currentChapter', currentChapter);
-              //     getChapterData();
-              //   }
-              // });
-              getBooks();
+              setState(() {
+                if (currentChapter <
+                    (bibleData.isNotEmpty
+                        ? bibleData[currentBook]!.length - 1
+                        : 1)) {
+                  currentChapter += 1;
+                  saveValue('currentChapter', currentChapter);
+                  chapterWidgets = getContentWidgets(
+                    bibleData[currentBook]?[currentChapter],
+                    context,
+                  );
+                }
+              });
             },
           ),
         ],
