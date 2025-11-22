@@ -121,64 +121,67 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> getBooks() async {
+    setState(() {
+      fetchingProgress = 0;
+    });
     String translation = prefs.getString('chosenTranslation') ?? "BSB";
     String fetchURL = 'https://bible.helloao.org/api/$translation/books.json';
-    // try {
-    // Get response and assign variables accordingly
-    var response = await http.get(Uri.parse(fetchURL));
+    try {
+      // Get response and assign variables accordingly
+      var response = await http.get(Uri.parse(fetchURL));
 
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body);
-      List<dynamic> listOfBooks = jsonResponse['books'];
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(response.body);
+        List<dynamic> listOfBooks = jsonResponse['books'];
 
-      List<String> bookIDs = listOfBooks
-          .map((element) => element['id'].toString())
-          .toList();
-      List<int> bookChapterCounts = listOfBooks
-          .map((element) => int.parse(element['numberOfChapters'].toString()))
-          .toList();
+        List<String> bookIDs = listOfBooks
+            .map((element) => element['id'].toString())
+            .toList();
+        List<int> bookChapterCounts = listOfBooks
+            .map((element) => int.parse(element['numberOfChapters'].toString()))
+            .toList();
 
-      for (int b = 0; b < bookIDs.length; b++) {
-        List<dynamic> bookData = [];
-        for (int c = 0; c < bookChapterCounts[b]; c++) {
-          bookData.add(await getChapterData(translation, bookIDs[b], c + 1));
-        }
-        bibleData[bookIDs[b]] = bookData;
-        if (bookIDs[b] == currentBook) {
-          print('remove splash');
+        for (int b = 0; b < bookIDs.length; b++) {
+          List<dynamic> bookData = [];
+          for (int c = 0; c < bookChapterCounts[b]; c++) {
+            bookData.add(await getChapterData(translation, bookIDs[b], c + 1));
+          }
+          bibleData[bookIDs[b]] = bookData;
+          if (bookIDs[b] == currentBook) {
+            print('remove splash');
+            setState(() {
+              chapterWidgets = getContentWidgets(
+                bibleData[currentBook]?[currentChapter],
+                context.mounted ? context : context,
+              );
+            });
+            FlutterNativeSplash.remove();
+          }
           setState(() {
-            chapterWidgets = getContentWidgets(
-              bibleData[currentBook]?[currentChapter],
-              context.mounted ? context : context,
-            );
+            fetchingProgress = bibleData.length / bookIDs.length;
           });
-          FlutterNativeSplash.remove();
+          // print('Got ${bookIDs[b]}');
         }
         setState(() {
-          fetchingProgress = bibleData.length / bookIDs.length;
+          bibleData = bibleData;
         });
-        // print('Got ${bookIDs[b]}');
+        print('got books');
+        List<int> bytes = utf8.encode(json.encode(bibleData));
+        List<int> compressed = GZipEncoder().encode(bytes);
+        saveValue('bibleData', base64.encode(compressed));
+        print('saved bible');
+        chapterWidgets = getContentWidgets(
+          bibleData[currentBook]?[currentChapter],
+          context.mounted ? context : context,
+        );
+        print('set chapter widgets');
+        FlutterNativeSplash.remove();
+      } else {
+        print("Theres a problem: ${response.statusCode}");
       }
-      setState(() {
-        bibleData = bibleData;
-      });
-      print('got books');
-      List<int> bytes = utf8.encode(json.encode(bibleData));
-      List<int> compressed = GZipEncoder().encode(bytes);
-      saveValue('bibleData', base64.encode(compressed));
-      print('saved bible');
-      chapterWidgets = getContentWidgets(
-        bibleData[currentBook]?[currentChapter],
-        context.mounted ? context : context,
-      );
-      print('set chapter widgets');
-      FlutterNativeSplash.remove();
-    } else {
-      print("Theres a problem: ${response.statusCode}");
+    } catch (e) {
+      print(e);
     }
-    // } catch (e) {
-    //   print(e);
-    // }
   }
 
   Future<List<dynamic>> getChapterData(
